@@ -1,0 +1,76 @@
+name: ${COMPOSE_PROJECT_NAME:-pairwise-rank}
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-pairwise-rank}-db
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pairwise-demo-local}
+      POSTGRES_DB: pairwise
+      POSTGRES_USER: pairwise
+    ports: ["${DB_PORT:-17724}:5432"]
+    volumes: ["db-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pairwise -d pairwise"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  redis:
+    image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-pairwise-rank}-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  backend:
+    build: ./backend
+    container_name: ${COMPOSE_PROJECT_NAME:-pairwise-rank}-backend
+    environment: &environment
+      DATABASE_URL: postgresql+psycopg://pairwise:${DB_PASSWORD:-pairwise-demo-local}@db:5432/pairwise
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-local-pairwise-rank-change-this-before-hosting}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      OMP_NUM_THREADS: 1
+      OPENBLAS_NUM_THREADS: 1
+    ports: ["${BACKEND_PORT:-19224}:8000"]
+    volumes: ["analysis-artifacts:/artifacts"]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+  worker:
+    build: ./backend
+    container_name: ${COMPOSE_PROJECT_NAME:-pairwise-rank}-worker
+    command: ["python", "-m", "src.worker"]
+    environment: *environment
+    volumes: ["analysis-artifacts:/artifacts"]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; import time; p=Path('/tmp/heartbeat'); assert p.exists() and time.time()-p.stat().st_mtime<30"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  frontend:
+    build: ./frontend
+    container_name: ${COMPOSE_PROJECT_NAME:-pairwise-rank}-frontend
+    ports: ["${FRONTEND_PORT:-18224}:80"]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  db-data:
+  redis-data:
+  analysis-artifacts:

@@ -1,0 +1,8 @@
+export interface User{id:number;name:string;email:string;role:'admin'|'analyst'|'viewer'}
+export interface Study{id:number;code:string;name:string;context:string;source_file:string}
+export interface Concept{id:number;study_id?:number;code:string;title:string;medium:string}
+export interface Pair{id:number;study_id:number;left_id:number;right_id:number;left_wins:number;right_wins:number;source:string}
+export interface RankRow extends Concept{ability:number;rank:number;rank_low:number;rank_median:number;rank_high:number;first_share:number;rank_frequency:Record<string,number>;comparisons:number}
+export interface Result{concepts:RankRow[];probabilities:(number|null)[][];graph:{vertices:number;edges:number;votes:number;connected:boolean;degree:number[]};diagnostic:{objective:number;gradient_max:number;iterations:number;optimizer_success:boolean;optimizer_message:string;centering_sum:number;acceptance:string};ridge:number;repeats:number;seed:number;draws:{repeat:number;wins:number[];abilities:number[];ranks:number[];first_share:number[];gradient_max:number}[];edge_totals:number[];edge_order:{i:number;j:number;wins:number;total:number}[];fingerprint:string;snapshot:{study:Study;concepts:Concept[];pairs:Pair[]}}
+export interface Run{id:number;name:string;study_id:number;ridge:number;repeats:number;seed:number;status:'queued'|'running'|'completed'|'failed';error:string;result:Result;created_at:string;snapshot:{study:Study;concepts:Concept[];pairs:Pair[]}}
+export interface Proposal{id:number;name:string;run_id:number;left_id:number;right_id:number;extra_votes:number;rationale:string;status:'draft'|'approved'|'rejected';reviewer_note:string;reviewed_by:string;created_at:string}

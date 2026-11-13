@@ -1,0 +1,1 @@
+import {runStatus,proposalStatus} from '../../constants/enums';export default function StatusBadge({status}:{status:string}){return <span className={'status '+status}>{({...runStatus,...proposalStatus} as Record<string,string>)[status]||status}</span>}

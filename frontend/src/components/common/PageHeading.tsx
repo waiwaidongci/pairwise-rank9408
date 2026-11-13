@@ -1,0 +1,1 @@
+export default function PageHeading({no,title,sub}:{no:string;title:string;sub:string}){return <div className="page-heading"><span className="section-number">{no}</span><div><p className="eyebrow">XIÁNXÙ / COMPARATIVE REVIEW</p><h1>{title}</h1><p>{sub}</p></div></div>}

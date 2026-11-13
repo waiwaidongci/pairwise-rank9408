@@ -1,0 +1,1 @@
+import {studyStore,selectStudy} from '../stores/studies';export default function StudySelect(){const {items,selected}=studyStore.use();return <label className="study-selector">研究卷宗<select aria-label="选择研究" value={selected} onChange={e=>selectStudy(Number(e.target.value))}>{items.map(s=><option key={s.id} value={s.id}>{s.code} · {s.name}</option>)}</select></label>}
